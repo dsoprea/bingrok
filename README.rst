@@ -1,0 +1,1 @@
+bingrok/resources/README.rst

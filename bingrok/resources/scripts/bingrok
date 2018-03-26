@@ -25,9 +25,34 @@ def _get_args():
 
     p.add_argument(
         '-o', '--offset',
-        default=0,
-        type=int,
         help='Offset (defaults to 0)')
+
+    p.add_argument(
+        '-sb', '--search-bytes',
+        nargs='+',
+        help="One or more bytes to search for. Printing and unpacking will start here. This *or* the offset can be given, but not both.")
+
+    p.add_argument(
+        '-smb', '--search-max-bytes',
+        type=int,
+        help="Max search bytes before giving up")
+
+    p.add_argument(
+        '-sso', '--search-start-offset',
+        type=int,
+        default=0,
+        help="Start search at given offset")
+
+    p.add_argument(
+        '-ssc', '--search-skip-count',
+        type=int,
+        default=0,
+        help="If non-zero, skip the first N-1 search results")
+
+    p.add_argument(
+        '-snd', '--search-no-dump',
+        action='store_true',
+        help="Don't print bytes at the found offset")
 
     p.add_argument(
         '-l', '--length',
@@ -70,10 +95,41 @@ def _main():
         else:
             length = _DEFAULT_LENGTH
 
+    offset = args.offset
+    if args.search_bytes is not None:
+        with open(args.filepath, 'rb') as f:
+            if offset is not None:
+                print("Search-bytes were given *and* an offset was given. "
+                      "Please provide only one.")
+
+                sys.exit(-1)
+
+            offset = \
+                bingrok.utility.search_bytes_frontend(
+                    args.filepath,
+                    args.search_bytes,
+                    search_start_offset=args.search_start_offset,
+                    search_max_bytes=args.search_max_bytes,
+                    skip_first_matches=args.search_skip_count)
+
+            if args.search_no_dump is True:
+                print(offset)
+                sys.exit(0)
+            else:
+                print("Found at ({}).".format(offset))
+                print('')
+    else:
+        if offset is None:
+            offset = 0
+        else:
+            # Allow the offset to also be a set of simple, summed numbers.
+            parts = [int(n) for n in offset.split('+')]
+            offset = sum(parts)
+
     with open(args.filepath, 'rb') as f:
         buffer_ = \
             bingrok.utility.get_slice(
-                f, args.offset, length=length, unpack_format=args.unpack_format)
+                f, offset, length=length, unpack_format=args.unpack_format)
 
         _LOGGER.debug("Extracted ({}) bytes.".format(len(buffer_)))
 
@@ -89,14 +145,14 @@ def _main():
                     do_make_nicer=do_make_nicer)
 
             bingrok.utility.print_unpacked(
-                args.offset,
+                offset,
                 unpack_info,
                 do_inline=args.print_unpacked_inline,
                 do_json=args.json)
         elif args.json is True:
             print(bingrok.utility.get_pretty_json([ord(c) for c in buffer_]))
         else:
-            bingrok.utility.print_bytes(args.offset, buffer_)
+            bingrok.utility.print_bytes(offset, buffer_)
 
 if __name__ == '__main__':
     _main()

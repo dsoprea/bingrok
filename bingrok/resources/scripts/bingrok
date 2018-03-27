@@ -104,13 +104,17 @@ def _main():
 
                 sys.exit(-1)
 
-            offset = \
-                bingrok.utility.search_bytes_frontend(
-                    args.filepath,
-                    args.search_bytes,
-                    search_start_offset=args.search_start_offset,
-                    search_max_bytes=args.search_max_bytes,
-                    skip_first_matches=args.search_skip_count)
+            try:
+                offset = \
+                    bingrok.utility.search_bytes_frontend(
+                        args.filepath,
+                        args.search_bytes,
+                        search_start_offset=args.search_start_offset,
+                        search_max_bytes=args.search_max_bytes,
+                        skip_first_matches=args.search_skip_count)
+            except bingrok.utility.EndOfFileException:
+                print("Bytes not found.")
+                sys.exit(2)
 
             if args.search_no_dump is True:
                 print(offset)

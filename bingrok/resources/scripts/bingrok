@@ -47,7 +47,7 @@ def _get_args():
         '-ssc', '--search-skip-count',
         type=int,
         default=0,
-        help="If non-zero, skip the first N-1 search results")
+        help="If non-zero, skip the first N search results")
 
     p.add_argument(
         '-snd', '--search-no-dump',
